@@ -1,7 +1,5 @@
 package cn.zheteng123.bean;
 
-import cn.zheteng123.bean.json.VideoInfo;
-
 import java.util.List;
 
 /**
@@ -11,7 +9,7 @@ import java.util.List;
 public class Course {
 
     private String id;
-    private List<VideoInfo> videoInfoList;
+    private List<VideoFullDlInfo> videoFullDlInfoList;
 
     public String getId() {
         return id;
@@ -21,11 +19,11 @@ public class Course {
         this.id = id;
     }
 
-    public List<VideoInfo> getVideoInfoList() {
-        return videoInfoList;
+    public List<VideoFullDlInfo> getVideoFullDlInfoList() {
+        return videoFullDlInfoList;
     }
 
-    public void setVideoInfoList(List<VideoInfo> videoInfoList) {
-        this.videoInfoList = videoInfoList;
+    public void setVideoFullDlInfoList(List<VideoFullDlInfo> videoFullDlInfoList) {
+        this.videoFullDlInfoList = videoFullDlInfoList;
     }
 }

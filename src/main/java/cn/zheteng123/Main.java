@@ -2,7 +2,7 @@ package cn.zheteng123;
 
 import cn.zheteng123.bean.Course;
 import cn.zheteng123.download.Downloader;
-import cn.zheteng123.download.impl.CommonDownloader;
+import cn.zheteng123.download.impl.IdmDownloader;
 import cn.zheteng123.spider.Spider;
 
 import java.util.Scanner;
@@ -26,7 +26,7 @@ public class Main {
         Spider spider = new Spider(strCookie);
         Course course = spider.fetchCourse(strCourseUrl);
 
-        Downloader downloader = new CommonDownloader();
+        Downloader downloader = new IdmDownloader();
         String strDownloadList = downloader.convertToDownloadList(course);
         System.out.println(strDownloadList);
     }

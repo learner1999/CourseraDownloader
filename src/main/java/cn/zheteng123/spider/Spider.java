@@ -1,6 +1,8 @@
 package cn.zheteng123.spider;
 
 import cn.zheteng123.bean.Course;
+import cn.zheteng123.bean.VideoDlInfo;
+import cn.zheteng123.bean.VideoFullDlInfo;
 import cn.zheteng123.bean.json.ContentSummary;
 import cn.zheteng123.bean.json.CourseStore;
 import cn.zheteng123.bean.json.Element;
@@ -25,8 +27,8 @@ public class Spider {
 
     private OkHttpClient client;
 
-    private List<String> videoIdList = new ArrayList<>();
-    private List<VideoInfo> videoInfoList = new ArrayList<>();
+    private List<VideoDlInfo> videoDlInfoList = new ArrayList<>();
+    private List<VideoFullDlInfo> videoFullDlInfoList = new ArrayList<>();
 
     public Spider(String strCookie) {
         this.strCookie = strCookie;
@@ -44,28 +46,35 @@ public class Spider {
                 .addHeader("cookie", strCookie)
                 .build();
 
-        String str = null;
+        CourseStore courseStore = null;
         try {
             Response response = client.newCall(request).execute();
-            str = response.body().string();
+            String str = response.body().string();
+            String jsonData = str.split("\"CourseStore\":")[1].split(",\"SessionStore\"")[0].trim();
+            courseStore = new Gson().fromJson(jsonData, CourseStore.class);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        String jsonData = str.split("\"CourseStore\":")[1].split(",\"SessionStore\"")[0].trim();
+        if (courseStore == null) {
+            return null;
+        }
 
-        CourseStore courseStore = new Gson().fromJson(jsonData, CourseStore.class);
+        traverseElement("", courseStore.rawCourseMaterials.courseMaterialsData.elements);
 
-        traverseElement(courseStore.rawCourseMaterials.courseMaterialsData.elements);
+        for (VideoDlInfo videoDlInfo : videoDlInfoList) {
+            VideoInfo videoInfo = fetchVideoInfo(courseStore.courseId, videoDlInfo.getId());
 
-        for (String videoId : videoIdList) {
-            VideoInfo videoInfo = fetchVideoInfo(courseStore.courseId, videoId);
-            videoInfoList.add(videoInfo);
+            VideoFullDlInfo videoFullDlInfo = new VideoFullDlInfo();
+            videoFullDlInfo.setPath(videoDlInfo.getPath());
+            videoFullDlInfo.setVideoInfo(videoInfo);
+
+            videoFullDlInfoList.add(videoFullDlInfo);
         }
 
         Course course = new Course();
         course.setId(courseStore.courseId);
-        course.setVideoInfoList(videoInfoList);
+        course.setVideoFullDlInfoList(videoFullDlInfoList);
 
         return course;
     }
@@ -75,7 +84,7 @@ public class Spider {
      * @param courseId 课程 id
      * @param elementId 节点 id（也就是视频 id）
      */
-    public VideoInfo fetchVideoInfo(String courseId, String elementId) {
+    private VideoInfo fetchVideoInfo(String courseId, String elementId) {
         String url = String.format(
                 "https://www.coursera.org/api/onDemandLectureVideos.v1/%s~%s?includes=video&fields=onDemandVideos.v1(sources%%2Csubtitles%%2CsubtitlesVtt%%2CsubtitlesTxt)",
                 courseId,
@@ -102,9 +111,10 @@ public class Spider {
 
     /**
      * 递归遍历课程节点 element
+     * @param path 保存当前节点的层级
      * @param elements 课程节点
      */
-    private void traverseElement(Element[] elements) {
+    private void traverseElement(String path, Element[] elements) {
         if (elements == null) {
             return;
         }
@@ -113,10 +123,13 @@ public class Spider {
             ContentSummary contentSummary = element.contentSummary;
 
             if (contentSummary != null && LECTURE.equals(contentSummary.typeName)) {
-                videoIdList.add(element.id);
+                VideoDlInfo videoDlInfo = new VideoDlInfo();
+                videoDlInfo.setPath(path + element.name + ".mp4");
+                videoDlInfo.setId(element.id);
+                videoDlInfoList.add(videoDlInfo);
                 continue;
             }
-            traverseElement(element.elements);
+            traverseElement(path + element.name + "\\", element.elements);
         }
     }
 }
